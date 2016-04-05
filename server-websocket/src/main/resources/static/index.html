@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Down the RabbitMQ hole</title>
+
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+
+
+        <link rel="stylesheet" href="vendor/css/normalize.css">
+        <link rel="stylesheet" href="vendor/css/skeleton.css">
+        <link rel="stylesheet" href="css/style.css">
+
+        <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/3.0.3/handlebars.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+        <script id="entry-template" type="text/x-handlebars-template">
+            <div class="rmq-row row">
+                <div class="rmq-avatar two columns">
+                    <img src="{{avatarUrl}}"/>
+                </div>
+                <div class="rmq-data ten columns" style="align-self: center;">
+                    <div class="rmq-data__avatar">{{name}} <span class="rmq-data__handle">{{handle}}</span></div>
+                    <div class="rmq-data__text">{{text}}</div>
+                </div>
+            </div>
+        </script>
+
+        <script type="application/javascript">
+
+         var INTRO_KEY = 13;
+         var stompClient;
+
+         function connect() {
+             var protocol     = location.protocol === "https:" ? "wss" : "ws";
+             var websocketURL = protocol + "://" + document.location.host + "/stomp";
+
+             stompClient = Stomp.client(websocketURL);
+             stompClient.debug = null;
+
+             stompClient.connect({}, function(frame) {
+                 console.log('Connected: ' + frame);
+                 document.querySelector("#status").innerHTML = "Connected";
+             });
+         }
+
+         function insertNode(tweet) {
+             var source = document.querySelector("#entry-template").innerHTML;
+             var template = Handlebars.compile(source);
+             var entries = document.querySelector(".entries");
+
+             var newNode = document.createElement("div");
+             newNode.innerHTML = template({
+                 avatarUrl: tweet.user.profile_image_url,
+                 name: tweet.user.name,
+                 handle: "@" + tweet.user.screen_name,
+                 text: tweet.text
+             });
+             var toInsert = newNode.childNodes[1];
+             entries.insertBefore(toInsert, document.querySelector(".rmq-row"));
+
+             // Delay the opacity change so it displays the transition
+             setTimeout(function() {
+                 toInsert.style.opacity = 1;
+             }, 100);
+         }
+
+         function insertText(event) {
+             if (event.keyCode === INTRO_KEY) {
+                 var value = event.target.value;
+                 event.target.value = "";
+
+                 var newElement = document.createElement("span");
+                 var text = document.createTextNode("#" + value);
+                 newElement.appendChild(text);
+                 document.querySelector(".topics").appendChild(newElement);
+
+                 stompClient.send("/queue/request", {}, JSON.stringify({
+                     topic: value
+                 }));
+
+                 stompClient.subscribe("/topic/" + value, function(response) {
+                     var tweet = JSON.parse(response.body);
+                     insertNode(tweet);
+                 });
+             }
+         }
+        </script>
+    </head>
+
+    <body onload="connect()">
+        <span id="status">Disconnected</span>
+        <div class="container">
+            <div class="row">
+                <div class="column" style="text-align: center">
+                    <h1>Down the <img src="/imgs/rabbitmq_logo.png" alt="RabbitMQ"/> Hole</h1>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="columns">
+                    <input class="u-full-width"
+                           type="text"
+                           placeholder="Insert a topic"
+                           onKeyup="insertText(event)"
+                           id="topicInput"></input>
+                    <div class="topics">
+                    </div>
+                </div>
+            </div>
+
+            <div class="entries">
+           </div>
+        </div>
+    </body>
+</html>

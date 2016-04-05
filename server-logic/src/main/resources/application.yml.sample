@@ -1,0 +1,12 @@
+rabbitmq:
+  host: 172.17.0.2
+  port: 5672
+  username: admin
+  password: admin
+
+
+twitter:
+  consumerKey: <Twitter Consumer key>
+  consumerSecret: <Twitter Consumer secret>
+  token: <Twitter token>
+  secret: <Twitter secret>

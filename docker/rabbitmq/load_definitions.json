@@ -1,0 +1,30 @@
+{
+    "rabbit_version":"3.5.7",
+    "users": [
+        {
+            "name":"admin",
+            "password_hash":"9E4+Lv9N5OCHwpsKz2ReAkkkHik=",
+            "tags":"administrator"
+        }
+    ],
+
+    "vhosts": [
+        {"name":"/"}
+    ],
+
+    "permissions": [
+        {
+            "user":"admin",
+            "vhost":"/",
+            "configure":".*",
+            "write":".*",
+            "read":".*"
+        }
+    ],
+
+    "parameters": [],
+    "policies": [],
+    "queues": [],
+    "exchanges": [],
+    "bindings": []
+}
