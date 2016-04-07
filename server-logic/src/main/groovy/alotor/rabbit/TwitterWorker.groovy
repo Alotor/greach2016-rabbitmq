@@ -10,12 +10,11 @@ import com.twitter.hbc.core.endpoint.StatusesFilterEndpoint
 import com.twitter.hbc.core.processor.StringDelimitedProcessor
 
 @TupleConstructor
-class TwitterWorker implements Runnable {
+class TwitterWorker {
     OAuth1 auth
     String topic
-    Closure onNewTopic
 
-    public void run() {
+    public void fetchTweets(Closure onNewTopic) {
         def queue = new LinkedBlockingQueue<String>(10000)
         def endpoint = new StatusesFilterEndpoint()
 
@@ -31,7 +30,7 @@ class TwitterWorker implements Runnable {
         client.connect()
 
         for (int msgRead = 0; msgRead < 100; msgRead++) {
-            this.onNewTopic(this.topic, queue.take())
+            onNewTopic(this.topic, queue.take())
             Thread.sleep(750)
         }
 

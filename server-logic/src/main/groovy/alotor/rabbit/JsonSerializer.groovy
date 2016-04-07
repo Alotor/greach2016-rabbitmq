@@ -11,4 +11,5 @@ class JsonSerializer {
     Map fromJson(byte[] payload) {
         return new JsonSlurper().parse(payload)
     }
+
 }

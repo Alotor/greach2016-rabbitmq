@@ -20,5 +20,6 @@ dependencies {
     compile('org.springframework.boot:spring-boot-starter-amqp')
     compile('org.springframework.boot:spring-boot-starter-integration')
     compile('org.springframework.integration:spring-integration-amqp')
+    compile('org.springframework.integration:spring-integration-java-dsl:1.1.2.RELEASE')
     compile("com.twitter:hbc-twitter4j:2.2.0")
 }

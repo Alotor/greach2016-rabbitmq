@@ -4,19 +4,22 @@
        xmlns:int="http://www.springframework.org/schema/integration"
        xmlns:int-amqp="http://www.springframework.org/schema/integration/amqp"
        xmlns:rabbit="http://www.springframework.org/schema/rabbit"
-       xmlns:task="http://www.springframework.org/schema/task"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
                            http://www.springframework.org/schema/beans/spring-beans.xsd
                            http://www.springframework.org/schema/integration
                            http://www.springframework.org/schema/integration/spring-integration.xsd
-                           http://www.springframework.org/schema/task
-                           http://www.springframework.org/schema/task/spring-task.xsd
                            http://www.springframework.org/schema/integration/amqp
                            http://www.springframework.org/schema/integration/amqp/spring-integration-amqp.xsd
                            http://www.springframework.org/schema/rabbit
                            http://www.springframework.org/schema/rabbit/spring-rabbit.xsd">
 
-    <!-- RABBITMQ CONFIG -->
+
+
+    <!-- Alternative Spring integration XML Config -->
+
+    <!--
+        RABBITMQ CONFIGURATION
+    -->
     <rabbit:connection-factory
         id="rabbitConnectionFactory"
         host="${rabbitmq.host}"
@@ -34,34 +37,38 @@
 
     <rabbit:queue name="request"/>
 
-  
-    <!-- LOGIC-->
+    <!--
+        SPRING INTEGRATION
+    -->
     <bean id="jsonSerializer" class="alotor.rabbit.JsonSerializer"/>
 
-    <!-- INPUT -->
+    <!--
+        RABBIT ==> SPRING
+    -->
     <int-amqp:inbound-channel-adapter
         channel="requestChannel"
         queue-names="request"
-        mapped-request-headers="*"/>
+        concurrent-consumers="2"/>
 
     <int:channel id="requestChannel" />
 
     <int:chain input-channel="requestChannel">
         <int:transformer ref="jsonSerializer" method="fromJson"/>
         <int:service-activator ref="mainService" method="startTopic" />
-    </int:chain>
-
+        </int:chain>
     
-    <!-- OUTPUT -->
+    
+    <!--
+        SPRING ==> RABBIT
+    -->
     <int:gateway
         id="workerGateway"
         service-interface="alotor.rabbit.WorkerGateway"
         default-request-channel="responseChannel">
 
-        <int:method name="broadcastMessage" payload-expression="#args[1]" reply-timeout="0">
+        <int:method name="broadcastMessage" payload-expression="#args[1]">
             <int:header name="routingKey" expression="#args[0]"/>
         </int:method>
-
     </int:gateway>
 
     <int:channel id="responseChannel" />
@@ -69,12 +76,11 @@
     <int:chain input-channel="responseChannel">
         <int:transformer ref="jsonSerializer" method="toJson" />
         <int:header-enricher>
-            <int:header name="content-type" value="application/json" overwrite="true"/><!--2-->
+            <int:header name="content-type" value="application/json" overwrite="true"/>
         </int:header-enricher>
         <int-amqp:outbound-channel-adapter
             exchange-name="amq.topic"
             routing-key-expression="headers.routingKey"
             mapped-request-headers="*"/>
     </int:chain>
-    
 </beans>
